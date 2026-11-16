@@ -8,6 +8,10 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 这些是水位线配置版本链路内部使用的数据表，不属于侧边栏里的业务模块，
+# 概览与健康检查的模块计数要把它们排除掉。
+INTERNAL_TABLES = {"watermark_version", "watermark_consume", "window_recalc"}
+
 
 class Store:
     def __init__(self) -> None:
@@ -16,7 +20,7 @@ class Store:
         }
 
     def module_names(self) -> list[str]:
-        return sorted(self._tables)
+        return sorted(name for name in self._tables if name not in INTERNAL_TABLES)
 
     def rows(self, module: str) -> list[dict[str, Any]]:
         return self._tables.setdefault(module, [])

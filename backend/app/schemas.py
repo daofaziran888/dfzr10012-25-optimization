@@ -64,6 +64,8 @@ class WindowEntry(BaseModel):
     field_5: str | None = None  # 延迟容忍
     field_6: str | None = None  # 触发策略
     field_7: str | None = None  # 窗口状态
+    field_8: str | None = None  # 最近重算
+    field_9: str | None = None  # 重算水位线版本
 
 class StateEntry(BaseModel):
     """后端配置明细结构。"""
@@ -160,6 +162,8 @@ class WatermarkEntry(BaseModel):
     field_5: str | None = None  # 发射间隔
     field_6: str | None = None  # 对齐策略
     field_7: str | None = None  # 配置状态
+    field_8: str | None = None  # 生效版本
+    field_9: str | None = None  # 版本号
 
 class ParallelEntry(BaseModel):
     """调优记录明细结构。"""
@@ -220,3 +224,36 @@ class LogEntry(BaseModel):
     field_5: str | None = None  # 异常类型
     field_6: str | None = None  # 处理状态
     field_7: str | None = None  # 记录状态
+
+
+class WatermarkVersionEntry(BaseModel):
+    """水位线配置版本明细结构：详情与窗口重算共用的唯一快照。"""
+
+    field_0: str | None = None  # 版本ID
+    field_1: str | None = None  # 配置编号
+    field_2: str | None = None  # 流名称
+    field_3: str | None = None  # 生效版本
+    field_4: str | None = None  # 版本号
+    field_5: str | None = None  # 时间字段
+    field_6: str | None = None  # 延迟容忍
+    field_7: str | None = None  # 空闲超时
+    field_8: str | None = None  # 发射间隔
+    field_9: str | None = None  # 对齐策略
+    field_10: str | None = None  # 校验结果
+    field_11: str | None = None  # 幂等键
+    field_12: str | None = None  # 写入时间
+
+
+class WindowRecalcEntry(BaseModel):
+    """窗口重算记录明细结构：一次重算只关联一条水位线版本行。"""
+
+    field_0: str | None = None  # 重算编号
+    field_1: str | None = None  # 窗口编号
+    field_2: str | None = None  # 配置编号
+    field_3: str | None = None  # 水位线版本ID
+    field_4: str | None = None  # 生效版本
+    field_5: str | None = None  # 延迟容忍
+    field_6: str | None = None  # 空闲超时
+    field_7: str | None = None  # 快照来源
+    field_8: str | None = None  # 幂等键
+    field_9: str | None = None  # 重算时间

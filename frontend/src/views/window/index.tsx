@@ -40,11 +40,14 @@ const stats = [
 ]
 
 type Row = Record<string, string | number | null>
+type RecalcResult = Record<string, string | number | null>
 
 export default function WindowView() {
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
+  const [notice, setNotice] = useState('')
+  const [recalc, setRecalc] = useState<RecalcResult | null>(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const filterFields = useMemo(() => columns.slice(0, 3), [])
 
@@ -67,6 +70,27 @@ export default function WindowView() {
   useEffect(() => {
     void reload()
   }, [reload])
+
+  async function runRecalc(row: Row) {
+    setErrorMessage('')
+    setNotice('')
+    try {
+      const response = await request(`${ENDPOINT}/${row.id}/recalculations`, {
+        method: 'POST',
+        body: JSON.stringify({ values: {} }),
+      })
+      const payload = await response.json()
+      if (!payload.ok) {
+        throw new Error(payload.message ?? '窗口重算未完成')
+      }
+      setNotice(payload.message ?? '窗口重算已完成')
+      setRecalc(payload.entry as RecalcResult)
+      await reload()
+    } catch (error) {
+      setRecalc(null)
+      setErrorMessage(error instanceof Error ? error.message : '窗口重算失败')
+    }
+  }
 
   async function runAction(action: string, row: Row) {
     setErrorMessage('')
@@ -129,6 +153,7 @@ export default function WindowView() {
         <thead>
           <tr>
             {columns.map((column) => <th key={column}>{column}</th>)}
+            <th>重算水位线版本</th>
             <th>可执行动作</th>
           </tr>
         </thead>
@@ -136,7 +161,11 @@ export default function WindowView() {
           {rows.map((row) => (
             <tr key={String(row.id)}>
               {columns.map((column) => <td key={column}>{row[column] ?? '—'}</td>)}
+              <td>{row.重算水位线版本 ?? '—'}</td>
               <td className="row-actions">
+                <button className="link" type="button" onClick={() => void runRecalc(row)}>
+                  按水位线快照重算
+                </button>
                 {actions.map((action) => (
                   <button key={action} className="link" type="button" onClick={() => void runAction(action, row)}>
                     {action}
@@ -147,14 +176,26 @@ export default function WindowView() {
           ))}
           {rows.length === 0 && (
             <tr>
-              <td className="empty-state" colSpan={columns.length + 1}>暂无窗口计算配置数据，可先登记窗口定义</td>
+              <td className="empty-state" colSpan={columns.length + 2}>暂无窗口计算配置数据，可先登记窗口定义</td>
             </tr>
           )}
         </tbody>
       </table>
 
+      {recalc && (
+        <section className="stat-card" style={{ marginTop: 12 }}>
+          <h3>最近一次窗口重算 · {String(recalc.窗口编号 ?? '')}</h3>
+          <p className="page-desc">
+            水位线版本 {String(recalc.生效版本 ?? '—')} · {String(recalc.水位线版本ID ?? '—')} ·
+            延迟容忍 {String(recalc.延迟容忍 ?? '—')} · 空闲超时 {String(recalc.空闲超时 ?? '—')} ·
+            快照来源 {String(recalc.快照来源 ?? '—')}
+          </p>
+        </section>
+      )}
+
       <footer className="page-foot">
         <span>共 {total} 条窗口计算配置记录</span>
+        {notice && <span>{notice}</span>}
         {errorMessage && <span className="error-text">{errorMessage}</span>}
       </footer>
     </section>

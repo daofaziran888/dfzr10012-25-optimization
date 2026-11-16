@@ -72,6 +72,17 @@ npm run dev
   `backend/app/routers/<模块>.py`，业务规则在 `backend/app/services/<模块>.py`。
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
+- 水位线配置版本是详情与窗口重算共用的唯一快照来源，链路与流程图见
+  [`docs/watermark-config-version-flow.md`](docs/watermark-config-version-flow.md)，
+  接口返回的机器可读版本在 `GET /api/watermark/flow`。
+
+## 测试
+
+```bash
+cd backend
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m unittest discover -s tests -v
+```
 
 领域：数据工程
 子方向：数仓与数据湖

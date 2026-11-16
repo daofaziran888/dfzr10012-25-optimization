@@ -8,7 +8,12 @@ from app.store import store
 MODULE = "window"
 REQUIRED_FIELDS = ["窗口编号", "数据流名称", "窗口类型"]
 STATUS_ORDER = ["草稿", "生效中", "已暂停", "已关闭"]
-ACTION_RULES = {"启用窗口": "草稿", "暂停窗口": "生效中", "关闭窗口": "已暂停"}
+# 动作 -> (要求的前置状态, 目标状态)；状态只能沿 草稿→生效中→已暂停→已关闭 前进。
+ACTION_RULES = {
+    "启用窗口": ("草稿", "生效中"),
+    "暂停窗口": ("生效中", "已暂停"),
+    "关闭窗口": ("已暂停", "已关闭"),
+}
 NEGATIVE_ACTIONS = []
 
 
@@ -43,6 +48,7 @@ class WindowService:
         entry["status"] = STATUS_ORDER[0]
         entry["pending"] = True
         entry["abnormal"] = False
+        entry["窗口状态"] = STATUS_ORDER[0]
         rows.append(entry)
         return entry, []
 
@@ -52,10 +58,21 @@ class WindowService:
             return None, f"窗口定义 {entry_id} 不存在或已归档"
         if action not in ACTION_RULES:
             return None, f"动作「{action}」不属于窗口计算配置可执行范围"
-        target = ACTION_RULES[action]
+        required, target = ACTION_RULES[action]
         if target not in STATUS_ORDER:
             return None, f"目标状态「{target}」不在允许的状态序列里"
+        current = str(entry.get("status") or STATUS_ORDER[0])
+        if current == target:
+            entry["窗口状态"] = target
+            entry["pending"] = target != STATUS_ORDER[-1]
+            return entry, f"窗口定义已是{target}，重复动作未改动字段"
+        if current != required:
+            return None, (
+                f"窗口定义当前为 {current}，{action}要求先处于 {required}，"
+                "请按 草稿→生效中→已暂停→已关闭 的顺序操作"
+            )
         entry["status"] = target
+        entry["窗口状态"] = target
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
         return entry, f"窗口定义已{action}"
